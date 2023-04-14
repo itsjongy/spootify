@@ -6,15 +6,17 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_login import LoginManager
 
 from .models import db, User
+# from .api.user_routes import user_routes
+# from .api.auth_routes import auth_routes
+# from .api.product_routes import product_routes
+# from .api.order_routes import order_routes
+# from .api.cart_routes import cart_routes
+
 from .seeds import seed_commands
 
 from .config import Config
 
-app = Flask(__name__)
-app.config.from_object(Config)
-
-# Set a custom static folder to serve the React app
-app.static_folder = os.path.abspath('../react-app/build/static')
+app = Flask(__name__, static_folder='../react-app/build', static_url_path='/')
 
 # Setup login manager
 login = LoginManager(app)
@@ -29,19 +31,22 @@ def load_user(id):
 # Tell flask about our seed commands
 app.cli.add_command(seed_commands)
 
-# Initialize the database
+app.config.from_object(Config)
+# app.register_blueprint(user_routes, url_prefix='/api/users/')
+# app.register_blueprint(auth_routes, url_prefix='/api/auth/')
+# app.register_blueprint(product_routes, url_prefix='/api/products/')
+# app.register_blueprint(order_routes, url_prefix='/api/orders/')
+# app.register_blueprint(cart_routes, url_prefix='/api/')
+
 db.init_app(app)
 Migrate(app, db)
 
-# Enable cross-origin resource sharing
+# Application Security
 CORS(app)
-
-# Enable CSRF protection
-CSRFProtect(app)
 
 @app.before_request
 def https_redirect():
-    if os.environ.get('FLASK_ENV') == 'production':
+    if os.environ.get('FLASK_DEBUG') != '1':
         if request.headers.get('X-Forwarded-Proto') == 'http':
             url = request.url.replace('http://', 'https://', 1)
             code = 301
@@ -53,9 +58,9 @@ def inject_csrf_token(response):
     response.set_cookie(
         'csrf_token',
         generate_csrf(),
-        secure=True if os.environ.get('FLASK_ENV') == 'production' else False,
+        secure=True if os.environ.get('FLASK_DEBUG') != '1' else False,
         samesite='Strict' if os.environ.get(
-            'FLASK_ENV') == 'production' else None,
+            'FLASK_DEBUG') != '1' else None,
         httponly=True)
     return response
 
