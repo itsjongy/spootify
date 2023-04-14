@@ -71,3 +71,6 @@ def react_root(path):
     if path == 'favicon.ico':
         return app.send_from_directory('public', 'favicon.ico')
     return app.send_static_file('index.html')
+# @app.route('/')
+# def hello():
+#     return 'Hello, World!'
